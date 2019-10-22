@@ -24,3 +24,6 @@ g++ -c main.cpp
 g++ main.o -o alg-vizualization -lsfml-graphics -lsfml-window -lsfml-system
 ```
 Now had compiled a source code, so you can execute it with command `./alg-vizualization`
+
+After running a programm you should see something like this
+![img](.illustration.png)
