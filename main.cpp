@@ -1,68 +1,102 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
-#include <thread>         // std::this_thread::sleep_for
+#include <thread>         
 #include <chrono>
 #include <stdlib.h>
 #include <iostream>
+#include <exception>
+
 const unsigned int C_WIDTH = 5;
 const unsigned int C_HEIGHT = 5;
 
 using ::std::vector;
 
-void draw(vector<unsigned int>& numbers , int  current_el ,  const unsigned int W_H , sf::RenderWindow &wn);
-
-/*
-
-void bubble_sort(vector<unsigned int>& numbers , const unsigned int W_H , sf::RenderWindow &wn)
+class ProgrammTerminated: public std::exception
 {
-    bool sorted = false;
-    int i = 0;
-    while (not sorted and i < numbers.size()-1)
-    {
-        draw(numbers ,numbers[i],W_H ,wn);
-        sorted = true;
-        int a = i;
-        while (a < numbers.size()-1){
-        if(numbers[a] < numbers[a] + 1 )
-            {
-            std::swap(numbers[a],numbers[a+1]);
-            draw(numbers ,numbers[a+1],W_H ,wn);
-            sorted = false;
-            }
-            ++a;
-        }
-        ++i;
-    }
+  virtual const char* what() const throw()
+  {
+    return "Program End";
+  }
+} terminated;
 
+
+void check_for_exit(sf::Event& event, sf::RenderWindow& window){
+   
+    window.pollEvent(event);
+    if (event.type == sf::Event::Closed)
+        {
+            window.close();
+            throw terminated;
+            
+        }
 }
 
-*/
 
-void bubble_sort(vector<unsigned int>& numbers , const unsigned int W_H , sf::RenderWindow &wn)
+void draw(vector<unsigned int>& numbers ,
+           std::pair<int,int>  draw_els,
+          const unsigned int W_H ,
+          sf::RenderWindow &wn,
+          sf::Color color = sf::Color(150,50,250), 
+          bool clear = true);
+
+
+
+void bubble_sort(vector<unsigned int>& numbers , const unsigned int W_H ,sf::Event& event, sf::RenderWindow &wn)
 {
+
+    std::pair<int,int> elements= std::make_pair<int,int>(-1,-1); // -1 - uninitialized values
     for( int i = 0; i < numbers.size(); i++ )
     {
-
-        std::cout<<"Hello";
         for( int j = 0; j < numbers.size() - 1; j++ )
-        {
-            draw(numbers ,j,W_H ,wn);
+        { 
+            check_for_exit(event,wn);
+            elements.first = j;
+            draw(numbers ,elements,W_H ,wn);
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             if( numbers[ j ] > numbers[ j + 1 ] )
-
+                elements.first = j+1;
                 std::swap( numbers[ j ], numbers[ j + 1 ] );
-                draw(numbers ,(j+1),W_H ,wn);
+                draw(numbers ,elements,W_H ,wn);
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
 
     }
 }
+
+  
+void selectionSort(vector<unsigned int>& numbers , const unsigned int W_H , sf::Event& event, sf::RenderWindow &wn)  
+{  
+    
+    int i, j, min_idx;  
+    int n = numbers.size();
+    // -1 means uninitialize positions
+    std::pair<int,int> elements = std::make_pair<int,int>(-1,-1);
+    for (i = 0; i < n-1; i++)  
+    {  
+        
+        min_idx = i;  
+        elements.first = i;
+        for (j = i+1; j < n; j++)  
+        check_for_exit(event,wn);
+        if (numbers[j] < numbers[min_idx]) 
+           
+            min_idx = j; 
+            elements.second = min_idx;
+            draw(numbers,elements,W_H,wn);           
+            std::swap(numbers[min_idx], numbers[i]); 
+            std::this_thread::sleep_for(std::chrono::milliseconds(120));
+             
+            
+    }  
+}  
+
 
 int main()
 {
 
     srand (time(NULL));
     vector<unsigned int>vec {10,3,4,5 , 20 , 1 , 3 ,10,3};
+    sf::Event event;
     for (int i = 0 ; i < 100; ++i)
     {
         vec.emplace_back(rand() % 100 + 10);
@@ -71,41 +105,45 @@ int main()
 
     unsigned int max = *max_element(vec.begin(),vec.end());
     const unsigned int W_H =  max * C_HEIGHT + 100;
-    sf::RenderWindow window(sf::VideoMode(static_cast<unsigned int>(vec.size() * C_WIDTH),W_H), "SFML works!");
-    sf::CircleShape shape(100.f);
-    shape.setFillColor(sf::Color::Green);
+    sf::RenderWindow window(sf::VideoMode(static_cast<unsigned int>(vec.size() * C_WIDTH),W_H), "Vizualiztion of sorting alghoritms");
+  
     bool running = true;
+    
     while (running)
-    {
-
-        bubble_sort(vec , W_H , window);
-        break;
-        draw(vec,vec[2],W_H ,window);
-        /*window.clear();
-        window.draw(shape);
-        window.display();*/
+    { 
+        
+        try
+        {
+            selectionSort(vec , W_H , event, window);
+        }
+        catch(const std::exception& e)
+        {
+            running = false;
+            std::cerr << e.what() << '\n';
+        }
+        
+        
+        
+        
+        
     }
-    sf::Event event;
-    while (window.pollEvent(event))
-    {
-        if (event.type == sf::Event::Closed)
-            window.close();
-    }
+    
+ 
 
     return 0;
 }
 
-void draw(vector<unsigned int>& numbers ,  int  current_el ,  const unsigned int W_H, sf::RenderWindow &wn)
+void draw(vector<unsigned int>& numbers ,  std::pair<int,int>  draw_els ,  const unsigned int W_H, sf::RenderWindow &wn,sf::Color color, bool clear)
 {
-    wn.clear();
+    if(clear) wn.clear();
     for(int i = 0 ; i < numbers.size() ; ++i)
     {
         sf::RectangleShape rectangle(sf::Vector2f(C_WIDTH, numbers[i] * C_HEIGHT));
         rectangle.setPosition(i * C_WIDTH  , W_H - numbers[i] * C_HEIGHT );
-        if(i==current_el)
-        {
-            rectangle.setFillColor(sf::Color(150,50,250));
-        }
+        
+        if(i==draw_els.first || i==draw_els.second ) rectangle.setFillColor(color);
+        
+        
         wn.draw(rectangle);
     }
     wn.display();
