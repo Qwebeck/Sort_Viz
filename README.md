@@ -1,5 +1,5 @@
 # Sort_Viz
-C++ vizualization to vizualize buble sort algorithm.
+C++ vizualization for buble sort.
 In order to execute vizualization you should do next steps:
 
 First - check for g++ installed with command:
